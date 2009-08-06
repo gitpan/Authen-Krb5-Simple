@@ -1,4 +1,3 @@
-# $Id: Makefile.PL,v 1.2 2005-02-21 23:49:42 dstuart Exp $
 ###############################################################################
 #
 # File:    Makefile.PL
@@ -56,23 +55,25 @@ if(exists($ENV{KRB5_LIB})) {
 # locations for these libs.
 #
 check_lib_or_exit(
-    lib     => [qw( krb5 k5crypto com_err )],
+    lib     => [qw( krb5 )],
     libpath => \@kr_lib_dirs
-);
+) unless($ENV{skip_lib_check});
 
 # Write out the Makefile
 #
 WriteMakefile(
     'NAME'          => 'Authen::Krb5::Simple',
     'VERSION_FROM'  => 'lib/Authen/Krb5/Simple.pm',
-    'PREREQ_PM'     => {},
+    'PREREQ_PM'     => {
+        'Test::More',
+    },
     ($] >= 5.006
         ? (
             ABSTRACT   => 'Perl module that performs Kerberos 5 authentication',
             AUTHOR     => 'Damien S. Stuart <dstuart@dstuart.org>')
         : ()
     ),
-    'LIBS'      => ["$krb5_lib -lkrb5 -lk5crypto"],
+    'LIBS'      => ["$krb5_lib -lkrb5"],
     'DEFINE'    => '',
     'INC'       => $krb5_inc,
 );

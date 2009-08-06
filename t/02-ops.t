@@ -1,4 +1,3 @@
-# $Id: 02-ops.t,v 1.1.1.1 2003-01-19 20:33:34 dstuart Exp $
 ###############################################################################
 # Authen::Krb5::Simple Test Script
 #
@@ -9,12 +8,8 @@
 ###############################################################################
 #
 use strict;
-
-use Test;
-
+use Test::More tests => 16;
 use Authen::Krb5::Simple;
-
-BEGIN { plan tests => 10 };
 
 # Get test user params (if any)
 #
@@ -22,73 +17,94 @@ my $tdata = get_test_data();
 
 my $krb = Authen::Krb5::Simple->new();
 
-# Valid object.
+# (1) Valid object.
 #
-ok(ref($krb) =~ /Authen::Krb5::Simple/);
+isa_ok($krb, 'Authen::Krb5::Simple', 'Valid object check');
 
-my $verbose = $ENV{verbose} || 0;
-
+my $errcode;
+my $errstr;
 my $ret;
 
-# Good pw
+# (2-7) Good pw
 #
-if(defined($tdata->{user}) and defined($tdata->{password})) {
+my $no_user_data = (!defined($tdata->{user}) and !defined($tdata->{password}));
+
+SKIP: {
+    skip "No user/password data provided", 6 if($no_user_data);
+
     my $tuser = $tdata->{user};
     my $tpass = $tdata->{password};
 
     $tuser .= "\@$tdata->{realm}" if(defined($tdata->{realm}));
 
-    $ret = $krb->authenticate($tuser, $tpass);
-
-    my $errcode = $krb->errcode();
-    my $errstr  = $krb->errstr();
-
-    print STDERR "\nGPW RET: $ret (code=$errcode, str=$errstr)\n" if($verbose);
-
-    ok($ret);
-
-    # Valid error conditions
-    ok($errcode == 0);
-    ok($errstr eq '');
-
-    # Now munge the pw and make sure we get the expected responses
-    #
-    $ret = $krb->authenticate($tuser, "x$tpass");
+    $ret = $krb->authenticate($tuser, $tpass) unless($no_user_data);
 
     $errcode = $krb->errcode();
     $errstr  = $krb->errstr();
 
-    print STDERR "\nGPW2 RET: $ret (code=$errcode, str=$errstr)\n" if($verbose);
+    ok($ret, 'Good username and password authentication');
 
-    ok(!$ret);
+    # Valid error conditions
+    #
+    ok($errcode == 0, "Error code 0 check: Got '$errcode'");
+    ok($errstr eq '', "Error string empty check: Got '$errstr'");
 
-    ok($errcode != 0);
-    ok($errstr ne '');
+    # Now munge the pw and make sure we get the expected responses
+    #
+    $ret = $krb->authenticate($tuser, "x$tpass") unless($no_user_data);
 
-} else {
-    skip(1,'Skipped good auth');
-    skip(1,'Skipped good auth errcode');
-    skip(1,'Skipped good auth errstr');
-    skip(1,'Skipped bad auth');
-    skip(1,'Skipped bad auth errcode');
-    skip(1,'Skipped bad auth errstr');
+    $errcode = $krb->errcode();
+    $errstr  = $krb->errstr();
+
+    ok(!$ret, "Return value 'true' check: Got '$ret'");
+
+    ok($errcode != 0, "Non-zero error code check: Got '$errcode'");
+    ok($errstr ne '', "Non-empty error string check: Got '$errstr'");
 }
 
-# Bad user and pw
+# (8-13) Null and Empty password
+#
+$ret = $krb->authenticate('_not_a_user_');
+ok($ret==0, "Null password returns 0 check: Got '$ret'");
+
+$errcode = $krb->errcode();
+$errstr  = $krb->errstr();
+
+ok($errcode eq 'e1', "Null password error code of 'e1' check: Got '$errcode'");
+ok($errstr =~ /Null or empty password not supported/,
+   "Null password error string check: Got '$errstr'");
+
+$ret = $krb->authenticate('_not_a_user_', '');
+ok($ret==0, "Empty password should return 0: Got '$ret'");
+
+$errcode = $krb->errcode();
+$errstr  = $krb->errstr();
+
+ok($errcode eq 'e1', "Empty password error code of 'e1' check: Got '$errcode'");
+ok($errstr =~ /Null or empty password not supported/,
+   "Null password error string check: Got '$errstr'");
+
+# (14) Bad user and pw
 #
 $ret = $krb->authenticate('_xxx', '_xxx');
-print STDERR "\nBPW RET: $ret\n" if($verbose);
-ok($ret == 0);
+ok($ret == 0, "Bad user and PW Check returns '0': Got '$ret'");
 
-# Valid error conditions
-ok($krb->errcode() != 0);
-ok($krb->errstr());
+$errcode = $krb->errcode();
+$errstr  = $krb->errstr();
+
+# (15-16) Valid error conditions
+#
+ok($errcode != 0, "Bad user and PW check non-zero error code: Got '$errcode'");
+ok($errstr, "Bad user and PW error string check");
+
+### End of Tests ###
 
 sub get_test_data {
     my %tdata;
 
-    unless(open(CONF, "<CONFIG")) {
-        print STDERR "\nUnable to read CONFIG file: $!\nSkipping user auth tests\n";
+    unless(open(CONF, "< CONFIG")) {
+        diag("** Unable to read CONFIG file: $!");
+        diag("** Skipping user auth tests");
         return undef;
     }
 
