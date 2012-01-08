@@ -20,7 +20,7 @@ require DynaLoader;
 
 our @ISA = qw(DynaLoader);
 
-our $VERSION = '0.42';
+our $VERSION = '0.43';
 
 bootstrap Authen::Krb5::Simple $VERSION;
 

@@ -56,7 +56,7 @@ if(exists($ENV{KRB5_LIB})) {
 #
 check_lib_or_exit(
     lib     => [qw( krb5 )],
-    libpath => \@kr_lib_dirs
+    libpath => \@krb_lib_dirs
 ) unless($ENV{skip_lib_check});
 
 # Write out the Makefile

@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Authen-Krb5-Simple
-version:             0.42
+version:             0.43
 abstract:            Perl module that performs Kerberos 5 authentication
 license:             ~
 author:              
